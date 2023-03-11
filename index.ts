@@ -37,12 +37,14 @@ app.get("/", (req, res) => {
   // res.send("Hello World!");
 });
 
-app.post("/import-csv", upload.single("file"), (req, res) => {
+app.get("/error", (req, res) => {
+  throw new Error("ERROR");
+});
+
+app.post("/import-csv", upload.single("file"), (req, res, error) => {
   if (!req.file) {
     console.log("No file upload");
   } else {
-    // console.log(req.file?.filename);
-
     function uploadCsv(path: any) {
       // console.log(path);
       let stream = fs.createReadStream(path);
@@ -54,27 +56,35 @@ app.post("/import-csv", upload.single("file"), (req, res) => {
         })
         .on("end", function () {
           csvDataCol.shift();
+          const email = csvDataCol[0][1];
+          // console.log(email);
+          const doesArrayContainPassword = csvDataCol[0].includes("password");
 
-          db.getConnection((error: any, connection: any) => {
+          const query = "INSERT INTO Auth_users (name,email,password) VALUES ?";
+
+          db.query(query, [csvDataCol], (error: any, result: any) => {
             if (error) {
-              console.log(error);
-            } else {
-              const query =
-                "INSERT INTO Auth_users (name,email,password) VALUES ?";
-              connection.query(
-                query,
-                [csvDataCol],
-                (error: any, res: any) => {}
-              );
+              console.log("This is the error", error);
+              res.send(error);
             }
+            // console.log(result);
           });
         });
       stream.pipe(fileStream);
     }
-
     uploadCsv(__dirname + "/uploads/" + req.file?.filename);
-    res.send("success");
   }
+});
+
+app.use((req, res) => {
+  res.status(404).send("Not found");
+});
+
+app.use((err: any, req: any, res: any, next: any) => {
+  console.log("***********************");
+  console.log("*******ERROR***********");
+  console.log("***********************");
+  res.status(500).send("Error");
 });
 
 app.listen(port, () => {
