@@ -1,11 +1,4 @@
 const multer = require("multer");
+const path = require("path");
 
 // Multer Config
-
-let storage = multer.diskStorage({
-  destination: (req: any, file: any, callback: any) => {
-    callback(null, "./uploads");
-  },
-});
-
-module.exports = storage;
